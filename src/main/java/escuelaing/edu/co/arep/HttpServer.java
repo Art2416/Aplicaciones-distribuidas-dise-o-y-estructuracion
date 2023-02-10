@@ -48,8 +48,8 @@ public class HttpServer {
             while ((inputLine = in.readLine()) != null) {
                 System.out.println("Received: " + inputLine);
 
-                if(inputLine.contains("hello?name=")){
-                    String[] res = inputLine.split("name=");
+                if(inputLine.contains("info?title=")){
+                    String[] res = inputLine.split("title=");
                     nombrePelicula = (res[1].split("HTTP")[0]).replace(" ", "");
                 }
                 if (indicator) {
@@ -64,18 +64,10 @@ public class HttpServer {
             if (ruta.startsWith("/apps/")) {
                 outputLine = ejecucion(ruta.substring(5));
             } else if (!nombrePelicula.equals("")) {
-                String response = Conection.busqueda(nombrePelicula,nombrePelicula);
-                outputLine ="HTTP/1.1 200 OK\r\n"
-                        + "Content-Type: text/html\r\n"
-                        + "\r\n"
-                        + "<br>"
-                        + "<table border=\" 1 \"> \n " + organizacion(response)
-                        + "</table>";
+                String response = Conection.busqueda(nombrePelicula, "http://www.omdbapi.com/?t=" + nombrePelicula + "&apikey=62c22013");
+                outputLine ="HTTP/1.1 200 OK\r\n" + "Content-Type: text/html\r\n" + "\r\n" + "<br>" + "<table border=\" 1 \"> \n " + organizacion(response)+ "    </table>";
             }else {
-                outputLine = "HTTP/1.1 200 OK\r\n"
-                        + "Content-Type: text/html\r\n"
-                        + "\r\n"
-                        + content();
+                outputLine = "HTTP/1.1 200 OK\r\n" + "Content-Type: text/html\r\n" + "\r\n" + content();
             }
 
             out.println(outputLine);
