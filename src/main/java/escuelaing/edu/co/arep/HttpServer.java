@@ -17,7 +17,6 @@ public class HttpServer {
 
     private OutputStream outputStream = null;
     public void run(String[] args) throws IOException {
-        String urlTitle = "";
         ServerSocket serverSocket = null;
         try {
             serverSocket = new ServerSocket(35000);
@@ -43,7 +42,7 @@ public class HttpServer {
             String nombrePelicula="";
             String inputLine, outputLine, ruta = "/simple";
             outputStream = clientSocket.getOutputStream();
-            Boolean boolFirstLine = true;
+            Boolean indicator = true;
 
 
             while ((inputLine = in.readLine()) != null) {
@@ -51,11 +50,11 @@ public class HttpServer {
 
                 if(inputLine.contains("hello?name=")){
                     String[] res = inputLine.split("name=");
-                    urlTitle = (res[1].split("HTTP")[0]).replace(" ", "");
+                    nombrePelicula = (res[1].split("HTTP")[0]).replace(" ", "");
                 }
-                if (boolFirstLine) {
+                if (indicator) {
                     ruta = inputLine.split(" ")[1];
-                    boolFirstLine = false;
+                    indicator = false;
                 }
 
                 if (!in.ready()) {
@@ -63,9 +62,9 @@ public class HttpServer {
                 }
             }
             if (ruta.startsWith("/apps/")) {
-                outputLine = executeService(ruta.substring(5));
-            } else if (!urlTitle.equals("")) {
-                String response = Conection.busqueda(urlTitle,urlTitle);
+                outputLine = ejecucion(ruta.substring(5));
+            } else if (!nombrePelicula.equals("")) {
+                String response = Conection.busqueda(nombrePelicula,nombrePelicula);
                 outputLine ="HTTP/1.1 200 OK\r\n"
                         + "Content-Type: text/html\r\n"
                         + "\r\n"
@@ -88,11 +87,6 @@ public class HttpServer {
     }
     public static HttpServer getInstance() {
         return _instance;
-    }
-
-
-    public OutputStream getOutputStream() {
-        return outputStream;
     }
 
     /**
@@ -167,14 +161,14 @@ public class HttpServer {
         }
         return organizar;
     }
-    public static String executeService(String serviceName) throws IOException {
+    public static String ejecucion(String serviceName) throws IOException {
         String body, header;
         if (memory.containsKey(serviceName) ) {
             Rest rs = memory.get(serviceName);
             header = rs.getHeader();
             body = rs.getResponse();
         } else {
-            Rest rs = memory.get("/404");
+            Rest rs = memory.get("/noEncontrado");
             header = rs.getHeader();
             body = rs.getResponse();
         }
