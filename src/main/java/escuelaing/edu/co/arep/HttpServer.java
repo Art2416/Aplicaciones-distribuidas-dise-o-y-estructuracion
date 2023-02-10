@@ -4,13 +4,20 @@ import java.net.*;
 import java.util.HashMap;
 import org.json.*;
 import java.io.*;
+import java.util.Map;
 
 
 /**
  * Crea un servidor web
  */
 public class HttpServer {
-    public static void main(String[] args) throws IOException {
+
+
+    private static  HttpServer _instance = new HttpServer();
+
+    private OutputStream outputStream = null;
+    public void run(String[] args) throws IOException {
+        String urlTitle = "";
         ServerSocket serverSocket = null;
         try {
             serverSocket = new ServerSocket(35000);
@@ -33,24 +40,45 @@ public class HttpServer {
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(
                             clientSocket.getInputStream()));
-            String inputLine, outputLine, nombrePelicula="";
+            String nombrePelicula="";
+            String inputLine, outputLine, ruta = "/simple";
+            outputStream = clientSocket.getOutputStream();
+            Boolean boolFirstLine = true;
 
 
             while ((inputLine = in.readLine()) != null) {
-                if(inputLine.contains("info?title=")){
-                    String[] array = inputLine.split("title=");
-                    nombrePelicula = (array[1].split("HTTP")[0]).replace(" ", "");
+                System.out.println("Received: " + inputLine);
+
+                if(inputLine.contains("hello?name=")){
+                    String[] res = inputLine.split("name=");
+                    urlTitle = (res[1].split("HTTP")[0]).replace(" ", "");
                 }
+                if (boolFirstLine) {
+                    ruta = inputLine.split(" ")[1];
+                    boolFirstLine = false;
+                }
+
                 if (!in.ready()) {
                     break;
                 }
             }
-            if(!nombrePelicula.equals("")){
-                String info = Conection.busqueda(nombrePelicula, "http://www.omdbapi.com/?t=" + nombrePelicula + "&apikey=62c22013");
-                outputLine ="HTTP/1.1 200 OK\r\n" + "Content-Type: text/html\r\n" + "\r\n" + "<br>" + "<table border=\" 1 \"> \n " + organizacion(info)+ "    </table>";
+            if (ruta.startsWith("/apps/")) {
+                outputLine = executeService(ruta.substring(5));
+            } else if (!urlTitle.equals("")) {
+                String response = Conection.busqueda(urlTitle,urlTitle);
+                outputLine ="HTTP/1.1 200 OK\r\n"
+                        + "Content-Type: text/html\r\n"
+                        + "\r\n"
+                        + "<br>"
+                        + "<table border=\" 1 \"> \n " + organizacion(response)
+                        + "</table>";
             }else {
-                outputLine = "HTTP/1.1 200 OK\r\n" + "Content-Type: text/html\r\n" + "\r\n" + content();
+                outputLine = "HTTP/1.1 200 OK\r\n"
+                        + "Content-Type: text/html\r\n"
+                        + "\r\n"
+                        + content();
             }
+
             out.println(outputLine);
             out.close();
             in.close();
@@ -58,9 +86,14 @@ public class HttpServer {
         }
         serverSocket.close();
     }
+    public static HttpServer getInstance() {
+        return _instance;
+    }
 
 
-
+    public OutputStream getOutputStream() {
+        return outputStream;
+    }
 
     /**
      * crea el contenido
@@ -98,7 +131,7 @@ public class HttpServer {
                 "</body>\n" +
                 "</html>";
     }
-
+    private static Map<String, Rest> memory = new HashMap<>();
     /**
      * organiza la informacion
      * @param inf hace visible el contenido de manera organizada
@@ -133,5 +166,22 @@ public class HttpServer {
             organizar += "<tr> \n";
         }
         return organizar;
+    }
+    public static String executeService(String serviceName) throws IOException {
+        String body, header;
+        if (memory.containsKey(serviceName) ) {
+            Rest rs = memory.get(serviceName);
+            header = rs.getHeader();
+            body = rs.getResponse();
+        } else {
+            Rest rs = memory.get("/404");
+            header = rs.getHeader();
+            body = rs.getResponse();
+        }
+
+        return header + body;
+    }
+    public void nuevoServicio(String key, Rest service) {
+        memory.put(key, service);
     }
 }
